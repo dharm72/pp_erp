@@ -7,7 +7,9 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "attribute_value"
+  "attribute_value",
+  "is_diamond_quality",
+  "is_diamond_seive_size"
  ],
  "fields": [
   {
@@ -15,12 +17,24 @@
    "fieldtype": "Data",
    "label": "Attribute Value",
    "unique": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "is_diamond_quality",
+   "fieldtype": "Check",
+   "label": "Is Diamond Quality"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_diamond_seive_size",
+   "fieldtype": "Check",
+   "label": "Is Diamond Seive Size"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-04 23:10:24.250366",
+ "modified": "2026-05-07 11:30:04.741683",
  "modified_by": "Administrator",
  "module": "Masters",
  "name": "Attribute Value",
