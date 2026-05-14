@@ -1,5 +1,5 @@
 frappe.ui.form.on('Purchase Order Item', {
-	add_item_code: function(frm, cdt, cdn) {
+	custom_add_item_code: function(frm, cdt, cdn) {
 		open_material_dialog(frm, cdt, cdn);
 	}
 });
