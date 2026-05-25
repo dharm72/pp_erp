@@ -7,304 +7,243 @@ frappe.ui.form.on('Purchase Order Item', {
 function open_material_dialog(frm, cdt, cdn) {
 	const dialog = new frappe.ui.Dialog({
 		title: 'Select Raw Material',
-		size: 'small',
+		size: 'large',
 		fields: [
 			{
-				fieldname: 'material_type',
-				fieldtype: 'Select',
-				label: 'Raw Material Type',
-				options: '',
-				reqd: 1,
-				onchange: function() {
-					on_material_type_change(dialog);
-				}
-			},
-			{
-				fieldname: 'template_item',
-				fieldtype: 'Select',
-				label: 'Raw Material',
-				options: '',
-				hidden: 1,
-				reqd: 0,
-				onchange: function() {
-					on_template_change(dialog);
-				}
-			},
-			{
-				fieldname: 'attr_section',
-				fieldtype: 'Section Break',
-				label: 'Attributes',
-				hidden: 1
-			},
-			{
-				fieldname: 'attr_1',
-				fieldtype: 'Select',
-				label: 'Attribute 1',
-				options: '',
-				hidden: 1
-			},
-			{
-				fieldname: 'attr_2',
-				fieldtype: 'Select',
-				label: 'Attribute 2',
-				options: '',
-				hidden: 1
-			},
-			{
-				fieldname: 'attr_3',
-				fieldtype: 'Select',
-				label: 'Attribute 3',
-				options: '',
-				hidden: 1
-			},
-			{
-				fieldname: 'attr_4',
-				fieldtype: 'Select',
-				label: 'Attribute 4',
-				options: '',
-				hidden: 1
-			},
-			{
-				fieldname: 'attr_5',
-				fieldtype: 'Select',
-				label: 'Attribute 5',
-				options: '',
-				hidden: 1
-			},
-			{
-				fieldname: 'attr_6',
-				fieldtype: 'Select',
-				label: 'Attribute 6',
-				options: '',
-				hidden: 1
-			},
-			{
-				fieldname: 'found_item_code',
-				fieldtype: 'Data',
-				label: 'Found Item Code',
-				read_only: 1,
-				hidden: 1
+				fieldname: 'main_html',
+				fieldtype: 'HTML',
+				options: '<div id="rm-dialog-root"></div>'
 			}
 		],
-		primary_action_label: 'Search Item',
-		primary_action: function() {
-			on_search(dialog);
-		}
+		primary_action_label: 'Add Item',
+		primary_action: function() { on_add(dialog); }
 	});
+
+	if (!document.getElementById('rm-dialog-style')) {
+		const style = document.createElement('style');
+		style.id = 'rm-dialog-style';
+		style.textContent = `
+			#rm-dialog-root { font-size: 13px; }
+
+			.rm-row {
+				display: flex;
+				align-items: flex-start;
+				gap: 12px;
+				padding: 8px 0;
+				border-bottom: 1px solid var(--border-color);
+			}
+			.rm-row:last-child { border-bottom: none; }
+
+			.rm-row-label {
+				min-width: 110px;
+				font-size: 11px;
+				font-weight: 600;
+				color: var(--text-muted);
+				text-transform: uppercase;
+				letter-spacing: 0.05em;
+				padding-top: 5px;
+				flex-shrink: 0;
+			}
+
+			.rm-pills {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 6px;
+			}
+
+			.rm-pill {
+				padding: 4px 14px;
+				border-radius: 20px;
+				border: 1px solid var(--border-color);
+				background: var(--control-bg);
+				color: var(--text-color);
+				font-size: 12px;
+				cursor: pointer;
+				transition: all 0.12s ease;
+				user-select: none;
+				white-space: nowrap;
+			}
+			.rm-pill:hover {
+				border-color: var(--primary);
+				color: var(--primary);
+			}
+			.rm-pill.selected {
+				background: var(--primary);
+				border-color: var(--primary);
+				color: #fff;
+				font-weight: 500;
+			}
+			.rm-placeholder {
+				font-size: 12px;
+				color: var(--text-muted);
+				font-style: italic;
+				padding-top: 5px;
+			}
+		`;
+		document.head.appendChild(style);
+	}
 
 	dialog._frm = frm;
 	dialog._cdt = cdt;
 	dialog._cdn = cdn;
 	dialog._current_attrs = [];
-	dialog._matched_item = null;
+	dialog._attr_values = {};
+	dialog._selected = { type: null, material: null };
+
+	dialog.show();
+	setTimeout(() => init_dialog(dialog), 50);
+}
+
+function get_root(dialog) {
+	return dialog.$wrapper.find('#rm-dialog-root');
+}
+
+function make_row(label, content_el) {
+	const row = $('<div class="rm-row"></div>');
+	row.append(`<div class="rm-row-label">${label}</div>`);
+	row.append(content_el);
+	return row;
+}
+
+function make_pills(values, selected, on_select) {
+	const wrap = $('<div class="rm-pills"></div>');
+	values.forEach(val => {
+		const pill = $(`<div class="rm-pill">${val}</div>`);
+		if (val === selected) pill.addClass('selected');
+		pill.on('click', function() {
+			wrap.find('.rm-pill').removeClass('selected');
+			pill.addClass('selected');
+			on_select(val);
+		});
+		wrap.append(pill);
+	});
+	return wrap;
+}
+
+function init_dialog(dialog) {
+	const root = get_root(dialog);
+	root.empty();
+
+	// Type row — loading
+	const typeContent = $('<div class="rm-placeholder">Loading...</div>');
+	root.append(make_row('Type', typeContent));
 
 	frappe.call({
 		method: 'pp_erp.api.item_variant_utils.get_item_group_children',
 		args: { parent_group: 'Raw Material' },
 		callback: function(r) {
 			const types = r.message || [];
-			dialog.set_df_property('material_type', 'options', '\n' + types.join('\n'));
-			refresh_dialog_field(dialog, 'material_type');
+			const pills = make_pills(types, dialog._selected.type, function(val) {
+				dialog._selected.type = val;
+				dialog._selected.material = null;
+				dialog._current_attrs = [];
+				dialog._attr_values = {};
+				// Remove material + attr rows, reload
+				root.find('.rm-row').not(':first').remove();
+				load_material_row(dialog, root, val);
+			});
+			typeContent.replaceWith(pills);
 		}
 	});
-
-	dialog.show();
 }
 
-function refresh_dialog_field(dialog, fieldname) {
-	if (
-		dialog.fields_dict &&
-		dialog.fields_dict[fieldname] &&
-		typeof dialog.fields_dict[fieldname].refresh === 'function'
-	) {
-		dialog.fields_dict[fieldname].refresh();
-	}
-}
-
-function on_material_type_change(dialog) {
-	const material_type = dialog.get_value('material_type');
-
-	reset_template_and_attributes(dialog);
-
-	if (!material_type) return;
+function load_material_row(dialog, root, material_type) {
+	const content = $('<div class="rm-placeholder">Loading...</div>');
+	const row = make_row('Material', content);
+	row.attr('id', 'rm-row-material');
+	root.append(row);
 
 	frappe.call({
 		method: 'pp_erp.api.item_variant_utils.get_item_group_children',
 		args: { parent_group: material_type },
-		freeze: true,
-		freeze_message: __('Loading...'),
 		callback: function(r) {
 			const children = r.message || [];
-
 			if (!children.length) {
-				frappe.msgprint(__('No items found under {0}', [material_type]));
+				content.text('No items found');
 				return;
 			}
-
-			dialog.set_df_property('template_item', 'options', '\n' + children.join('\n'));
-			dialog.set_df_property('template_item', 'hidden', 0);
-			dialog.set_df_property('template_item', 'reqd', 1);
-			refresh_dialog_field(dialog, 'template_item');
+			const pills = make_pills(children, dialog._selected.material, function(val) {
+				dialog._selected.material = val;
+				dialog._current_attrs = [];
+				dialog._attr_values = {};
+				// Remove attr rows, reload
+				root.find('.rm-row[id^="rm-row-attr"]').remove();
+				load_attr_rows(dialog, root, val);
+			});
+			content.replaceWith(pills);
 		}
 	});
 }
 
-function on_template_change(dialog) {
-	const template = dialog.get_value('template_item');
-
-	hide_all_attribute_fields(dialog);
-
-	dialog.set_df_property('found_item_code', 'hidden', 1);
-	dialog.set_value('found_item_code', '');
-	refresh_dialog_field(dialog, 'found_item_code');
-
-	dialog.set_primary_action(__('Search Item'), function() {
-		on_search(dialog);
-	});
-
-	if (!template) return;
+function load_attr_rows(dialog, root, template) {
+	// Show a single loading placeholder
+	const loadingRow = $('<div class="rm-row" id="rm-row-attr-loading"><div class="rm-placeholder">Loading attributes...</div></div>');
+	root.append(loadingRow);
 
 	frappe.call({
 		method: 'pp_erp.api.item_variant_utils.get_template_attributes',
 		args: { template_name: template },
-		freeze: true,
-		freeze_message: __('Loading attributes...'),
 		callback: function(r) {
-			if (!r.message) {
-				frappe.msgprint(__('No Item Template found with name "{0}". Make sure an Item Template with that exact name exists.', [template]));
-				return;
-			}
+			loadingRow.remove();
+
+			if (!r.message) return;
 
 			const attrs = r.message.attributes || [];
 			dialog._current_attrs = attrs;
 
-			if (!attrs.length) {
-				frappe.msgprint(__('No attributes defined in template {0}', [template]));
-				return;
-			}
+			attrs.forEach((attr, i) => {
+				const attrName = attr.attribute;
+				const label = attr.label || attrName;
+				const values = attr.values || [];
 
-			dialog.set_df_property('attr_section', 'hidden', 0);
-			refresh_dialog_field(dialog, 'attr_section');
+				const pills = make_pills(values, null, function(val) {
+					dialog._attr_values[attrName] = val;
+				});
 
-			attrs.forEach((attr, index) => {
-				const fieldname = `attr_${index + 1}`;
-
-				if (!dialog.fields_dict[fieldname]) return;
-
-				dialog.set_df_property(fieldname, 'label', attr.label || attr.attribute);
-				dialog.set_df_property(fieldname, 'options', '\n' + (attr.values || []).join('\n'));
-				dialog.set_df_property(fieldname, 'hidden', 0);
-				dialog.set_df_property(fieldname, 'reqd', 1);
-				dialog.set_value(fieldname, '');
-
-				refresh_dialog_field(dialog, fieldname);
+				const row = make_row(label, pills);
+				row.attr('id', `rm-row-attr-${i}`);
+				root.append(row);
 			});
 		}
 	});
 }
 
-function on_search(dialog) {
-	const material_type = dialog.get_value('material_type');
-	const template = dialog.get_value('template_item');
-
-	if (!material_type) {
-		frappe.msgprint(__('Please select Raw Material Type.'));
+function on_add(dialog) {
+	if (!dialog._selected.material) {
+		frappe.msgprint(__('Please select a material.'));
 		return;
 	}
 
-	if (!template) {
-		frappe.msgprint(__('Please select Raw Material.'));
+	const missing = dialog._current_attrs.find(attr => !dialog._attr_values[attr.attribute]);
+	if (missing) {
+		frappe.msgprint(__('Please select a value for: {0}', [missing.label || missing.attribute]));
 		return;
 	}
 
 	const attributes = {};
-
-	for (let i = 0; i < dialog._current_attrs.length; i++) {
-		const attr = dialog._current_attrs[i];
-		const fieldname = `attr_${i + 1}`;
-		const value = dialog.get_value(fieldname);
-
-		if (!value) {
-			frappe.msgprint(__('Please fill all attribute fields.'));
-			return;
-		}
-
-		attributes[attr.attribute] = value;
-	}
+	dialog._current_attrs.forEach(attr => {
+		attributes[attr.attribute] = dialog._attr_values[attr.attribute];
+	});
 
 	frappe.call({
 		method: 'pp_erp.api.item_variant_utils.find_item_variant',
-		args: {
-			template_item_code: template,
-			attributes: attributes
-		},
+		args: { template_item_code: dialog._selected.material, attributes },
 		freeze: true,
-		freeze_message: __('Searching item variant...'),
+		freeze_message: __('Finding item...'),
 		callback: function(r) {
 			if (!r.message) {
-				dialog._matched_item = null;
-				dialog.set_df_property('found_item_code', 'hidden', 1);
-				dialog.set_value('found_item_code', '');
-				refresh_dialog_field(dialog, 'found_item_code');
-				frappe.msgprint(__('No matching variant found.'));
+				frappe.msgprint({
+					title: __('Item Not Available'),
+					message: __('No matching item variant found for the selected attributes.'),
+					indicator: 'red'
+				});
 				return;
 			}
 
-			const matched = r.message;
-			dialog._matched_item = matched;
-
-			dialog.set_df_property('found_item_code', 'hidden', 0);
-			dialog.set_value('found_item_code', matched.item_code);
-			refresh_dialog_field(dialog, 'found_item_code');
-
-			dialog.set_primary_action(__('Add to Purchase Order'), function() {
-				frappe.model.set_value(dialog._cdt, dialog._cdn, 'item_code', matched.item_code);
-				frappe.show_alert({
-					message: __('{0} added to Purchase Order', [matched.item_code]),
-					indicator: 'green'
-				}, 4);
-				dialog.hide();
-			});
+			const item_code = r.message.item_code;
+			frappe.model.set_value(dialog._cdt, dialog._cdn, 'item_code', item_code);
+			frappe.show_alert({ message: __('{0} added', [item_code]), indicator: 'green' }, 3);
+			dialog.hide();
 		}
 	});
-}
-
-function reset_template_and_attributes(dialog) {
-	dialog._matched_item = null;
-
-	dialog.set_value('template_item', '');
-	dialog.set_df_property('template_item', 'hidden', 1);
-	dialog.set_df_property('template_item', 'reqd', 0);
-	dialog.set_df_property('template_item', 'options', '');
-	refresh_dialog_field(dialog, 'template_item');
-
-	hide_all_attribute_fields(dialog);
-
-	dialog.set_df_property('found_item_code', 'hidden', 1);
-	dialog.set_value('found_item_code', '');
-	refresh_dialog_field(dialog, 'found_item_code');
-
-	dialog.set_primary_action(__('Search Item'), function() {
-		on_search(dialog);
-	});
-}
-
-function hide_all_attribute_fields(dialog) {
-	dialog._current_attrs = [];
-
-	dialog.set_df_property('attr_section', 'hidden', 1);
-	refresh_dialog_field(dialog, 'attr_section');
-
-	for (let i = 1; i <= 6; i++) {
-		const fieldname = `attr_${i}`;
-
-		if (!dialog.fields_dict[fieldname]) continue;
-
-		dialog.set_value(fieldname, '');
-		dialog.set_df_property(fieldname, 'hidden', 1);
-		dialog.set_df_property(fieldname, 'reqd', 0);
-		dialog.set_df_property(fieldname, 'label', `Attribute ${i}`);
-		dialog.set_df_property(fieldname, 'options', '');
-		refresh_dialog_field(dialog, fieldname);
-	}
 }
