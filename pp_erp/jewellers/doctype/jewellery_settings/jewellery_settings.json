@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-05-27 20:30:05.400562",
+ "creation": "2026-05-27 23:39:29.556874",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -24,10 +24,10 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-27 23:32:12.126232",
+ "modified": "2026-05-27 23:39:29.556874",
  "modified_by": "Administrator",
  "module": "Jewellers",
- "name": "PP Settings",
+ "name": "Jewellery Settings",
  "owner": "Administrator",
  "permissions": [
   {

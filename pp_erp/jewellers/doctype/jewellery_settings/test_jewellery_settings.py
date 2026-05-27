@@ -13,9 +13,9 @@ IGNORE_TEST_RECORD_DEPENDENCIES = []  # eg. ["User"]
 
 
 
-class IntegrationTestPPSettings(IntegrationTestCase):
+class IntegrationTestJewellerySettings(IntegrationTestCase):
 	"""
-	Integration tests for PPSettings.
+	Integration tests for JewellerySettings.
 	Use this class for testing interactions between multiple components.
 	"""
 
