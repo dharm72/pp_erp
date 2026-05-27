@@ -1,46 +1,25 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-05-25 11:54:55.448625",
+ "creation": "2026-05-07 22:32:15.821282",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "date",
-  "metal_type",
-  "metal_touch",
-  "rate"
+  "section_break_ishm"
  ],
  "fields": [
   {
-   "default": "Today",
-   "fieldname": "date",
-   "fieldtype": "Date",
-   "label": "Date"
-  },
-  {
-   "fieldname": "metal_type",
-   "fieldtype": "Select",
-   "label": "Metal Type",
-   "options": "Gold\nSilver\nPlatinum"
-  },
-  {
-   "fieldname": "metal_touch",
-   "fieldtype": "Data",
-   "label": "Metal Touch"
-  },
-  {
-   "fieldname": "rate",
-   "fieldtype": "Float",
-   "label": "Rate"
+   "fieldname": "section_break_ishm",
+   "fieldtype": "Section Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-05-27 21:58:59.487308",
+ "modified": "2026-05-27 23:32:12.623942",
  "modified_by": "Administrator",
- "module": "Masters",
- "name": "Metal Price List",
+ "module": "Jewellers",
+ "name": "Attribute Configuration",
  "owner": "Administrator",
  "permissions": [
   {

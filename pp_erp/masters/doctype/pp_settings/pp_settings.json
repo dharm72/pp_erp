@@ -1,56 +1,41 @@
 {
  "actions": [],
  "allow_rename": 1,
- "creation": "2026-05-25 11:54:55.448625",
+ "creation": "2026-05-27 20:30:05.400562",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "date",
-  "metal_type",
-  "metal_touch",
-  "rate"
+  "section_break_ahbp",
+  "metal_mapping"
  ],
  "fields": [
   {
-   "default": "Today",
-   "fieldname": "date",
-   "fieldtype": "Date",
-   "label": "Date"
+   "fieldname": "section_break_ahbp",
+   "fieldtype": "Section Break"
   },
   {
-   "fieldname": "metal_type",
-   "fieldtype": "Select",
-   "label": "Metal Type",
-   "options": "Gold\nSilver\nPlatinum"
-  },
-  {
-   "fieldname": "metal_touch",
-   "fieldtype": "Data",
-   "label": "Metal Touch"
-  },
-  {
-   "fieldname": "rate",
-   "fieldtype": "Float",
-   "label": "Rate"
+   "fieldname": "metal_mapping",
+   "fieldtype": "Table",
+   "label": "Metal Mapping",
+   "options": "Metal Mapping"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "issingle": 1,
  "links": [],
- "modified": "2026-05-27 21:58:59.487308",
+ "modified": "2026-05-27 20:34:30.590648",
  "modified_by": "Administrator",
  "module": "Masters",
- "name": "Metal Price List",
+ "name": "PP Settings",
  "owner": "Administrator",
  "permissions": [
   {
    "create": 1,
    "delete": 1,
    "email": 1,
-   "export": 1,
    "print": 1,
    "read": 1,
-   "report": 1,
    "role": "System Manager",
    "share": 1,
    "write": 1
