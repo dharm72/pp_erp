@@ -6,6 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "section_break_ahbp",
+  "date",
+  "tab_2_tab",
   "metal_mapping"
  ],
  "fields": [
@@ -18,13 +20,23 @@
    "fieldtype": "Table",
    "label": "Metal Mapping",
    "options": "Metal Mapping"
+  },
+  {
+   "fieldname": "tab_2_tab",
+   "fieldtype": "Tab Break",
+   "label": "Metal Details"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-05-27 23:39:29.556874",
+ "modified": "2026-05-27 23:58:02.180801",
  "modified_by": "Administrator",
  "module": "Jewellers",
  "name": "Jewellery Settings",
